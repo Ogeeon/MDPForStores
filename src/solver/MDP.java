@@ -1,7 +1,17 @@
-package problem;
+package solver;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
+import java.util.TreeMap;
+import problem.Matrix;
 
 /**
  * Class representing Markov Decision Process.
@@ -17,6 +27,8 @@ public class MDP {
     private double returnFee;
     /** Price of items of a given type. */
     private double itemPrice;
+    /** Discount factor. */
+    private double gamma;
     /** Transition matrix. */
     private Matrix probabilities;
     /** States of the process. */
@@ -28,19 +40,22 @@ public class MDP {
      * @param returnSize Max number of items the store can return in a week
      * @param fee Fee charged for returning items
      * @param price Price of items of a given type
+     * @param discount Process disctount factor
      * @param transProbs Transition matrix
      */
     public MDP(final int storageSpace, final int orderSize, final int returnSize, 
-                final double fee, final double price, final Matrix transProbs) {
+                final double fee, final double price, final double discount, final Matrix transProbs) {
         capacity = storageSpace;
         maxOrder = orderSize;
         maxReturns = returnSize;
         returnFee = fee;
         itemPrice = price;
+        gamma = discount;
         probabilities = transProbs;
         
         states = initStates();
         
+        /*
         for (State s : states) {
             System.out.print(s + ":  ");
             Set<Action> acts = getActions(s);
@@ -54,10 +69,9 @@ public class MDP {
                 }
                 System.out.println();
             }
-            
             System.out.println("");
-            break;
         }
+        */
     }
     
     /**
@@ -72,7 +86,6 @@ public class MDP {
                 sts.add(tmp);
             }
         }
-        
         return sts;
     }
     
@@ -86,9 +99,9 @@ public class MDP {
         // A store cannot return more items that it has, and cannot exceed its capacity.
         int remainder = state.getInitialStock() - state.getCustomerWants();
         remainder = remainder < 0 ? 0 : remainder;
-        int minChng = remainder - maxReturns > 0 ? -1 * maxReturns : -1 * remainder;
+        int minChng = -Math.min(remainder, maxReturns);
         int maxChng = Math.min(maxOrder, capacity - remainder);
-        for (int chng = minChng; chng < maxChng; chng++) {
+        for (int chng = minChng; chng <= maxChng; chng++) {
             Action a = new Action(chng);
             acts.add(a);
         }
@@ -104,6 +117,7 @@ public class MDP {
      */
     private double getProbability(final State s, final Action a, final State s1) {
         int remainder = s.getInitialStock() - s.getCustomerWants();
+        remainder = remainder < 0 ? 0 : remainder;
         if (remainder + a.getChange() != s1.getInitialStock()) {
             return 0;
         }
@@ -122,7 +136,8 @@ public class MDP {
             r = 0.5 * returnFee * a.getChange(); 
         }
         if (s1.getInitialStock() - s1.getCustomerWants() > 0) {
-            r += itemPrice * s1.getCustomerWants();
+            // Store keeps 75% of price of sold items
+            r += 0.75 * itemPrice * s1.getCustomerWants();
         } else {
             // Store keeps 75% of price of sold items
             r += 0.75 * itemPrice * s1.getInitialStock();
@@ -131,5 +146,85 @@ public class MDP {
         }
             
         return r;
+    }
+
+    /**
+     * The value iteration algorithm for calculating the utility of states.
+     * @param epsilon The maximum error allowed in the utility of any state
+     * @param optimalActions Map with optimal policy
+     * @return a vector of utilities for states in S
+     */
+    public final Map<State, Double> performValueIteration(final double epsilon, 
+                                                          final Map<State, Action> optimalActions) {
+        // Local variables: U, U', vectors of utilities for states in S, initially zero
+        Map<State, Double> u = initMap(states, new Double(0));
+        Map<State, Double> uDelta = initMap(states, new Double(0));
+        // Maximum change in the utility of any state in an iteration
+        double delta = 0;
+        // Note: Just calculate this once for efficiency purposes:
+        // &epsilon;(1 - &gamma;)/&gamma;
+        double minDelta = epsilon * (1 - gamma) / gamma;
+        Action noAct = new Action(0);
+        
+        for (int iter = 0; iter < 100; iter++) {
+        // repeat
+//        do {
+            // U <- U'; &delta; <- 0
+            u.putAll(uDelta);
+            delta = 0;
+            // for each state s in S do
+            for (State s : states) {
+                // max<sub>a &isin; A(s)</sub>
+                Set<Action> actions = getActions(s);
+                double aMax = 0;
+                for (Action a : actions) {
+                    // &Sigma;<sub>s'</sub>P(s' | s, a) U[s']
+                    double aSum = 0;
+                    for (State sDelta : states) {
+                        aSum += getProbability(s, a, sDelta) * u.get(sDelta);
+                    }
+                    if (aSum > aMax) {
+                        // aSum > aMax) {
+                        aMax = aSum;
+                        optimalActions.put(s, a);
+                    }
+                }
+                // U'[s] <- R(s) + &gamma;
+                // max<sub>a &isin; A(s)</sub>
+                // TODO shouldn't use noAction
+                uDelta.put(s, getReward(noAct, s) + gamma * aMax);
+                // if |U'[s] - U[s]| > &delta; then &delta; <- |U'[s] - U[s]|
+                double aDiff = Math.abs(uDelta.get(s) - u.get(s));
+                if (aDiff > delta) {
+                    delta = aDiff;
+                }
+            }
+            System.out.println(delta);
+            // until &delta; < &epsilon;(1 - &gamma;)/&gamma;
+//        } while (delta > minDelta);
+        }
+        printUtils(uDelta);
+        return u;
+    }
+
+    /**
+     * @param keys Map keys
+     * @param value Value for entries
+     * @return Map with given keys, populated with given value
+     */
+    private <K, V> Map<K, V> initMap(Collection<K> keys, V value) {
+        Map<K, V> map = new LinkedHashMap<K, V>();
+        for (K k : keys) {
+            map.put(k, value);
+        }
+        return map;
+    }
+    
+    @SuppressWarnings("unchecked")
+    private void printUtils(Map<State, Double> utils) {
+        Map<State, Double> treeMap = new TreeMap<State, Double>(utils);
+        for (Entry<State, Double> entry : treeMap.entrySet()) {
+            System.out.println(entry.getKey() + ": " + entry.getValue());
+        }
     }
 }

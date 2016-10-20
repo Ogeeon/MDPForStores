@@ -26,8 +26,9 @@ public class Runner {
 	public static boolean RECREATE_SOLVER = true;
 
 	public static void main(String[] args) throws Exception {
-		//parseCommandLine(args);
+		//parseCommandLine(args); // TODO revert to commandline
 	    inputPath = "small-v1.txt";
+//	    inputPath = "nano.txt";
 	    outputPath = "out.txt";
 	    solverName = DEFAULT_SOLVER;
 	            

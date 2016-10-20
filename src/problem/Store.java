@@ -58,7 +58,12 @@ public class Store {
 			maxOrder = 15;
 			maxReturns = 10;
 			maxTypes = 10;
-		} else {
+		} else if (name.equals("nano")) { // TODO remove me
+            capacity = 2;
+            maxOrder = 2;
+            maxReturns = 1;
+            maxTypes = 1;
+        } else {
 			throw new IllegalArgumentException("Invalid store class.");
 		}
 	}

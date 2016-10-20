@@ -2,10 +2,10 @@ package solver;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
-
+import java.util.Map;
 import problem.Store;
-import problem.MDP;
 import problem.Matrix;
 import problem.ProblemSpec;
 
@@ -23,8 +23,12 @@ public class MySolver implements OrderingAgent {
 	
 	public void doOfflineComputation() {
 	    MDP itemP = new MDP(store.getCapacity(), store.getMaxPurchase(), store.getMaxReturns(),
-	            spec.getPenaltyFee(), spec.getPrices().get(0), spec.getProbabilities().get(0));
+	            spec.getPenaltyFee(), spec.getPrices().get(0), spec.getDiscountFactor(), probabilities.get(0));
+	    Map<State, Action> policy = new LinkedHashMap<State, Action>();
+	    Map<State, Double> utils = itemP.performValueIteration(1, policy);
+	    
 	}
+	
 	
 	public List<Integer> generateStockOrder(List<Integer> stockInventory,
 											int numWeeksLeft) {

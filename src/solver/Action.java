@@ -1,4 +1,4 @@
-package problem;
+package solver;
 
 /**
  * Class representing agent's action - i.e. ordering or returning items.
@@ -19,5 +19,9 @@ public class Action {
      */
     public final int getChange() {
         return change;
+    }
+    
+    public final String toString() {
+        return String.valueOf(change);
     }
 }

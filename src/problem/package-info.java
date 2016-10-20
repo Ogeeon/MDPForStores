@@ -1,4 +1,4 @@
 /**
- * Classes relevant to problem definition and solving.
+ * Classes relevant to problem definition.
  */
 package problem;

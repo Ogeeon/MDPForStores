@@ -37,7 +37,7 @@ public class Store {
 			capacity = 3;
 			maxOrder = 2;
 			maxReturns = 1;
-			maxTypes = 3;
+			maxTypes = 2;
 		} else if (name.equals("small")) {
 			capacity = 8;
 			maxOrder = 3;

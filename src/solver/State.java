@@ -1,51 +1,45 @@
 package solver;
 
+import java.util.List;
+
 /**
  * Class that represents state of item type in a store.
  */
 public class State implements Comparable<State> {
     /** Amount of items in stock on Monday. */
-    private int stock;
-    /** Amount of items requested by customers during a week. */
-    private int requested;
+    private List<Integer> stock;
     
     /**
      * @param initialStock Amount of items in stock on Monday
-     * @param customerWants Amount of items requested by customers during a week
      */
-    public State(final int initialStock, final int customerWants) {
+    public State(List<Integer> initialStock) {
         stock = initialStock;
-        requested = customerWants;
     }
     
     /**
      * @return Amount of items in stock on Monday
      */
-    public final int getInitialStock() {
+    public final List<Integer> getInitialStock() {
         return stock;
     }
     
-    /**
-     * @return Amount of items requested by customers during a week
-     */
-    public final int getCustomerWants() {
-        return requested;
-    }
-    
     public String toString() {
-        return "(" + stock + "," + requested + ")";
+        return stock.toString();
     }
 
     @Override
     public int compareTo(State o) {
-        int s1 = this.stock;
-        int s2 = o.getInitialStock();
-        int w1 = this.requested;
-        int w2 = o.getCustomerWants();
-        if (s2 > s1) return -1;
-        if (s2 < s1) return 1;
-        if (w2 > w1) return -1;
-        if (w2 < w1) return 1;
+        if (stock.size() != o.getInitialStock().size()) {
+            throw new IllegalArgumentException("Number of item types don't match");
+        }
+        for (int idx = 0; idx < stock.size(); idx++) {
+            if (stock.get(idx) < o.getInitialStock().get(idx)) {
+                return 1;
+            }
+            if (stock.get(idx) > o.getInitialStock().get(idx)) {
+                return -1;
+            }
+        }
         return 0;
     }
 }

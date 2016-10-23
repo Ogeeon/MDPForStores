@@ -44,12 +44,10 @@ public class MySolver implements OrderingAgent {
 	        types.get(idx).setStorage(storageParts.get(idx));
 	    }
 	    
-	    for (ItemType t: types) {
-	        MDP itemP = new MDP(store.getCapacity(), t.getStorage(), store.getMaxPurchase(), store.getMaxReturns(),
-	                spec.getPenaltyFee(), spec.getPrices().get(t.getId()), 
-	                spec.getDiscountFactor(), probabilities.get(t.getId()));
-	        t.setPolicy(itemP.valueIteration(1));
-	    }
+	        MDP itemP = new MDP(store.getCapacity(),store.getMaxPurchase(), store.getMaxReturns(),
+	                spec.getPenaltyFee(), spec.getPrices().get(0), 
+	                spec.getDiscountFactor(), probabilities.get(0));
+//	        t.setPolicy(itemP.valueIteration(1));
 	}
 	
 	

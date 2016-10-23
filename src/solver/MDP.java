@@ -1,9 +1,11 @@
 package solver;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -36,7 +38,6 @@ public class MDP {
     
     /**
      * @param storageSpace Max number of items the store can stock
-     * @param m1 Part of storage space reserved for this item type
      * @param orderSize Max number of items the store can order in a week
      * @param returnSize Max number of items the store can return in a week
      * @param fee Fee charged for returning items
@@ -44,10 +45,9 @@ public class MDP {
      * @param discount Process disctount factor
      * @param transProbs Transition matrix
      */
-    public MDP(final int storageSpace, final int m1, final int orderSize, final int returnSize, 
+    public MDP(final int storageSpace, final int orderSize, final int returnSize, 
                 final double fee, final double price, final double discount, final Matrix transProbs) {
         capacity = storageSpace;
-        stockPart = m1;
         maxOrder = orderSize;
         maxReturns = returnSize;
         returnFee = fee;
@@ -56,6 +56,7 @@ public class MDP {
         probabilities = transProbs;
         
         states = initStates();
+        System.out.println(states);
     }
     
     /**
@@ -64,9 +65,13 @@ public class MDP {
     private Set<State> initStates() {
         final Set<State> sts = new HashSet<State>();
         
-        for (int s = 0; s <= stockPart; s++) {
-            for (int r = 0; r <= capacity; r++) {
-                State tmp = new State(s, r);
+        for (int s = -capacity; s <= capacity; s++) {
+            int upperLim = s <= 0 ? capacity : capacity - s;
+            for (int r = -capacity; r <= upperLim; r++) {
+                List<Integer> state = new ArrayList<Integer>();
+                state.add(s);
+                state.add(r);
+                State tmp = new State(state);
                 sts.add(tmp);
             }
         }
@@ -81,6 +86,7 @@ public class MDP {
         Set<Action> acts = new HashSet<Action>();
         // Actions that can be done are just returning or ordering items. 
         // A store cannot return more items that it has, and cannot exceed its capacity.
+        /*
         int remainder = state.getInitialStock() - state.getCustomerWants();
         remainder = remainder < 0 ? 0 : remainder;
         int minChng = -Math.min(remainder, maxReturns);
@@ -89,7 +95,7 @@ public class MDP {
             Action a = new Action(chng);
             acts.add(a);
         }
-        
+        */
         return acts;
     }
     
@@ -100,12 +106,15 @@ public class MDP {
      * @return Probability of transition
      */
     private double getProbability(final State s, final Action a, final State s1) {
+        /*
         int remainder = s.getInitialStock() - s.getCustomerWants();
         remainder = remainder < 0 ? 0 : remainder;
         if (remainder + a.getChange() != s1.getInitialStock()) {
             return 0;
         }
         return probabilities.get(remainder + a.getChange(), s1.getCustomerWants());
+        */
+        return 0;
     }
     
     /**
@@ -115,6 +124,7 @@ public class MDP {
      */
     private double getReward(final Action a, final State s1) {
         double r = 0;
+        /*
         if (a.getChange() < 0) {
             // Store pays 50% of price of items it returns
             r = 0.5 * returnFee * a.getChange(); 
@@ -128,7 +138,7 @@ public class MDP {
             // Store is fined for 25% price of items it failed to provide
             r -= 0.25 * itemPrice * (s1.getCustomerWants() - s1.getInitialStock());
         }
-            
+            */
         return r;
     }
 
@@ -174,14 +184,17 @@ public class MDP {
             }
             // until delta < &epsilon(1 - gamma)/gamma
         } while (delta > minDelta);
+        
         Map<State, Action> sortedPolicy = new TreeMap<State, Action>(optimalActions);
         Map<Integer, Integer> policy = new HashMap<Integer, Integer>();
+        /*
         for (Entry<State, Action> entry : sortedPolicy.entrySet()) {
             State s = (State) entry.getKey(); 
             if (s.getCustomerWants() == 0) {
                 policy.put(s.getInitialStock(), ((Action) entry.getValue()).getChange());
             }
         }
+        */
         return policy;
     }
 

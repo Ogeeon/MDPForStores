@@ -80,20 +80,6 @@ public class MySolver implements OrderingAgent {
 	    }
 	    int idx = types.size() - 1;
 	    int id = 0;
-	    // pre-cut to not exceed store capacity
-	    while (totalStock + totalOrdered > store.getCapacity()) {
-	        id = types.get(idx).getId();
-	        if (itemOrders.get(id) > 0) {
-	            itemOrders.set(id, itemOrders.get(id) - 1);
-	            totalOrdered--;
-	        }
-	        idx--;
-	        if (idx < 0) {
-	            idx = types.size() - 1;
-	        }
-	    }
-	    idx = types.size() - 1;
-        id = 0;
         // pre-cut to not exceed maximum order size
         while (totalOrdered > store.getMaxPurchase()) {
             id = types.get(idx).getId();

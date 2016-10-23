@@ -50,14 +50,14 @@ public class Store {
 			maxTypes = 3;
 		} else if (name.equals("large")) {
 			capacity = 10;
-			maxOrder = 5;
-			maxReturns = 3;
+			maxOrder = 4;
+			maxReturns = 2;
 			maxTypes = 5;
 		} else if (name.equals("mega")) {
 			capacity = 20;
-			maxOrder = 15;
-			maxReturns = 10;
-			maxTypes = 10;
+			maxOrder = 5;
+			maxReturns = 3;
+			maxTypes = 7;
 		} else {
 			throw new IllegalArgumentException("Invalid store class.");
 		}

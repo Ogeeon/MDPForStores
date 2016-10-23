@@ -124,13 +124,10 @@ public class ProblemSpec {
 						rowSum += data[i][j];
 					}
 					s.close();
-// TODO uncomment me
-					/*
 					if (Math.round(rowSum*100000) != 100000) {
 						throw new InputMismatchException(
 								"Row probabilities do not sum to 1.");
 					}
-					*/
 				}
 				probabilities.add(new Matrix(data));
 			}

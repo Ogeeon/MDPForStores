@@ -2,9 +2,8 @@ package solver;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import problem.Store;
 import problem.Matrix;
 import problem.ProblemSpec;
@@ -14,6 +13,7 @@ public class MySolver implements OrderingAgent {
 	private ProblemSpec spec = new ProblemSpec();
 	private Store store;
     private List<Matrix> probabilities;
+    private List<ItemType> types;
 	
 	public MySolver(ProblemSpec spec) throws IOException {
 	    this.spec = spec;
@@ -22,49 +22,103 @@ public class MySolver implements OrderingAgent {
 	}
 	
 	public void doOfflineComputation() {
-	    MDP itemP = new MDP(store.getCapacity(), store.getMaxPurchase(), store.getMaxReturns(),
-	            spec.getPenaltyFee(), spec.getPrices().get(0), spec.getDiscountFactor(), probabilities.get(0));
-	    Map<State, Action> policy = new LinkedHashMap<State, Action>();
-	    Map<State, Double> utils = itemP.performValueIteration(1, policy);
+	    types = new ArrayList<ItemType>();
+	    List<Double> p = spec.getPrices();
+	    for (int id = 0; id < p.size(); id++) {
+	        types.add(new ItemType(id, p.get(id)));
+	    }
 	    
+	    types.sort(new Comparator<ItemType>() {
+            @Override
+            public int compare(ItemType arg0, ItemType arg1) {
+                if (arg1.getPrice() > arg0.getPrice()) {
+                    return 1;
+                } else if (arg1.getPrice() < arg0.getPrice()) {
+                    return -1;
+                }
+                return 0;
+            }
+	    });
+	    List<Integer> storageParts = getStorageParts(store.getCapacity(), store.getMaxTypes());
+	    for (int idx = 0; idx < types.size(); idx++) {
+	        types.get(idx).setStorage(storageParts.get(idx));
+	    }
+	    
+	    for (ItemType t: types) {
+	        MDP itemP = new MDP(store.getCapacity(), t.getStorage(), store.getMaxPurchase(), store.getMaxReturns(),
+	                spec.getPenaltyFee(), spec.getPrices().get(t.getId()), 
+	                spec.getDiscountFactor(), probabilities.get(t.getId()));
+	        t.setPolicy(itemP.valueIteration(1));
+	    }
 	}
 	
 	
 	public List<Integer> generateStockOrder(List<Integer> stockInventory,
 											int numWeeksLeft) {
+	    List<Integer> itemOrders = new ArrayList<Integer>();
 
-		List<Integer> itemOrders = new ArrayList<Integer>();
-		List<Integer> itemReturns = new ArrayList<Integer>();
-
-		// Example code that buys one of each item type.
-        // TODO Replace this with your own code.
-
-		int totalItems = 0;
-		for (int i : stockInventory) {
-			totalItems += i;
-		}
-		
-		int totalOrder = 0;
-		for (int i = 0; i < store.getMaxTypes(); i++) {
-			if (totalItems >= store.getCapacity() ||
-			        totalOrder >= store.getMaxPurchase()) {
-				itemOrders.add(0);
-			} else {
-				itemOrders.add(1);
-				totalOrder ++;
-				totalItems ++;
-			}
-			itemReturns.add(0);
-		}
-
-
-		// combine orders and returns to get change for each item type
-		List<Integer> order = new ArrayList<Integer>(itemOrders.size());
-		for(int i = 0; i < itemOrders.size(); i++) {
-			order.add(itemOrders.get(i) - itemReturns.get(i));
-		}
-
-		return order;
+	    int ordered = 0;
+	    int totalOrdered = 0;
+	    int curr = 0;
+	    int totalStock = 0;
+	    for (int itemId = 0; itemId < stockInventory.size(); itemId++) {
+	        curr = stockInventory.get(itemId);
+	        totalStock += curr;
+	        for (ItemType t: types) {
+	            if (t.getId() == itemId) {
+	                if (curr < t.getPolicy().size()) {
+    	                ordered = t.getPolicy().get(curr);
+    	                if (curr + ordered > t.getStorage()) {
+    	                    ordered -= t.getStorage() - (curr + ordered);
+    	                }
+	                }
+	                break;
+	            }
+	        }
+	        itemOrders.add(itemId, ordered);
+	        totalOrdered += ordered;
+	    }
+	    int idx = types.size() - 1;
+	    int id = 0;
+	    // pre-cut to not exceed store capacity
+	    while (totalStock + totalOrdered > store.getCapacity()) {
+	        id = types.get(idx).getId();
+	        if (itemOrders.get(id) > 0) {
+	            itemOrders.set(id, itemOrders.get(id) - 1);
+	            totalOrdered--;
+	        }
+	        idx--;
+	        if (idx < 0) {
+	            idx = types.size() - 1;
+	        }
+	    }
+	    idx = types.size() - 1;
+        id = 0;
+        // pre-cut to not exceed maximum order size
+        while (totalOrdered > store.getMaxPurchase()) {
+            id = types.get(idx).getId();
+            if (itemOrders.get(id) > 0) {
+                itemOrders.set(id, itemOrders.get(id) - 1);
+                totalOrdered--;
+            }
+            idx--;
+            if (idx < 0) {
+                idx = types.size() - 1;
+            }
+        }
+	    
+	    return itemOrders;
 	}
 
+	private List<Integer> getStorageParts(int totalStorage, int typesCount) {
+	    List<Integer> parts = new ArrayList<Integer>();
+	    double d = 1.0 / totalStorage;
+	    double r = 1.0 * typesCount / totalStorage;
+	    int a = (int) Math.ceil(1.0 * totalStorage / typesCount);
+	    int b = (int) Math.floor(1.0 * totalStorage / typesCount);
+	    for (int idx = 1; idx <= typesCount; idx++) {
+	        parts.add((idx * d < r) ? a : b);
+	    }
+	    return parts;
+	}
 }

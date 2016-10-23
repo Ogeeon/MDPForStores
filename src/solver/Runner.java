@@ -26,20 +26,12 @@ public class Runner {
 	public static boolean RECREATE_SOLVER = true;
 
 	public static void main(String[] args) throws Exception {
-		//parseCommandLine(args); // TODO revert to commandline
-	    inputPath = "small-v1.txt";
-//	    inputPath = "nano.txt";
-	    outputPath = "out.txt";
-	    solverName = DEFAULT_SOLVER;
+		parseCommandLine(args);
 	            
 		Class<?> clazz = Class.forName(solverName);
 		Constructor<?> ctor = clazz.getConstructor(ProblemSpec.class);
 		
 		ProblemSpec spec = new ProblemSpec(inputPath);
-		
-		OrderingAgent solver = (OrderingAgent) ctor.newInstance(spec);
-        solver.doOfflineComputation();
-/*
 		double totalProfit = 0;
 		
 		Simulator simulator = new Simulator(spec);
@@ -73,7 +65,6 @@ public class Runner {
 		System.out.printf("Summary statistics from %d runs:\n", numSimulations);
 		System.out.println();
 		System.out.printf("Overall profit: %f\n", totalProfit);
-		*/
 	}
 	
 	/**

@@ -3,7 +3,10 @@ package solver;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+
 import problem.Store;
 import problem.Matrix;
 import problem.ProblemSpec;
@@ -13,96 +16,98 @@ public class MySolver implements OrderingAgent {
 	private ProblemSpec spec = new ProblemSpec();
 	private Store store;
     private List<Matrix> probabilities;
-    private List<ItemType> types;
+    /** States of the process. */
+    private Set<State> states;
 	
 	public MySolver(ProblemSpec spec) throws IOException {
 	    this.spec = spec;
 		store = spec.getStore();
         probabilities = spec.getProbabilities();
+        states = new HashSet<State>();
 	}
 	
 	public void doOfflineComputation() {
-	    types = new ArrayList<ItemType>();
-	    List<Double> p = spec.getPrices();
-	    for (int id = 0; id < p.size(); id++) {
-	        types.add(new ItemType(id, p.get(id)));
+	    initStates();
+	    for (State s: states) {
+	        System.out.println(s);
 	    }
-	    
-	    types.sort(new Comparator<ItemType>() {
-            @Override
-            public int compare(ItemType arg0, ItemType arg1) {
-                if (arg1.getPrice() > arg0.getPrice()) {
-                    return 1;
-                } else if (arg1.getPrice() < arg0.getPrice()) {
-                    return -1;
-                }
-                return 0;
-            }
-	    });
-	    List<Integer> storageParts = getStorageParts(store.getCapacity(), store.getMaxTypes());
-	    for (int idx = 0; idx < types.size(); idx++) {
-	        types.get(idx).setStorage(storageParts.get(idx));
-	    }
-	    
-	        MDP itemP = new MDP(store.getCapacity(),store.getMaxPurchase(), store.getMaxReturns(),
-	                spec.getPenaltyFee(), spec.getPrices().get(0), 
-	                spec.getDiscountFactor(), probabilities.get(0));
-//	        t.setPolicy(itemP.valueIteration(1));
 	}
 	
 	
 	public List<Integer> generateStockOrder(List<Integer> stockInventory,
 											int numWeeksLeft) {
 	    List<Integer> itemOrders = new ArrayList<Integer>();
-
-	    int ordered = 0;
-	    int totalOrdered = 0;
-	    int curr = 0;
-	    int totalStock = 0;
-	    for (int itemId = 0; itemId < stockInventory.size(); itemId++) {
-	        curr = stockInventory.get(itemId);
-	        totalStock += curr;
-	        for (ItemType t: types) {
-	            if (t.getId() == itemId) {
-	                if (curr < t.getPolicy().size()) {
-    	                ordered = t.getPolicy().get(curr);
-    	                if (curr + ordered > t.getStorage()) {
-    	                    ordered -= t.getStorage() - (curr + ordered);
-    	                }
-	                }
-	                break;
-	            }
-	        }
-	        itemOrders.add(itemId, ordered);
-	        totalOrdered += ordered;
-	    }
-	    int idx = types.size() - 1;
-	    int id = 0;
-        // pre-cut to not exceed maximum order size
-        while (totalOrdered > store.getMaxPurchase()) {
-            id = types.get(idx).getId();
-            if (itemOrders.get(id) > 0) {
-                itemOrders.set(id, itemOrders.get(id) - 1);
-                totalOrdered--;
-            }
-            idx--;
-            if (idx < 0) {
-                idx = types.size() - 1;
-            }
-        }
+	    
 	    
 	    return itemOrders;
 	}
 
-	private List<Integer> getStorageParts(int totalStorage, int typesCount) {
-	    List<Integer> parts = new ArrayList<Integer>();
-	    double d = 1.0 / totalStorage;
-	    double r = 1.0 * typesCount / totalStorage;
-	    int a = (int) Math.ceil(1.0 * totalStorage / typesCount);
-	    int b = (int) Math.floor(1.0 * totalStorage / typesCount);
-	    for (int idx = 1; idx <= typesCount; idx++) {
-	        parts.add((idx * d < r) ? a : b);
-	    }
-	    return parts;
-	}
+    
+    private void initStates() {
+        for (int s = 0; s <= store.getCapacity(); s++) {
+            for (int r = 0; r <= store.getCapacity() - s; r++) {
+                List<Integer> state = new ArrayList<Integer>();
+                state.add(s);
+                state.add(r);
+                State tmp = new State(state);
+                tmp.setActions(getActions(tmp));
+                states.add(tmp);
+            }
+        }
+    }
+    
+    private Set<Action> getActions(final State state) {
+        // Actions that can be done are just returning or ordering items.
+        Set<Action> acts = new HashSet<Action>();
+        for (int a1 = -store.getMaxReturns(); a1 <= store.getMaxPurchase(); a1++) {
+            int min = 0;
+            if (a1 < 0) {
+                if (state.getStock().get(0) + a1 < 0) {
+                    continue;
+                }
+                if (-a1 < store.getMaxReturns()) {
+                    min = -(store.getMaxReturns() + a1);
+                }
+            }
+            int max = a1 < 0 ? store.getMaxPurchase() : store.getMaxPurchase() - a1;
+            for (int a2 = min; a2 <= max; a2++) {
+                if (a2 < 0 && state.getStock().get(1) + a2 < 0) {
+                    continue;
+                }
+                List<Integer> act = new ArrayList<Integer>();
+                act.add(a1);
+                act.add(a2);
+                acts.add(new Action(act));
+            }
+        }
+        return acts;
+    }
+
+    private double getProbability(final State s, final Action a, final State s1) {
+        double prob = 1;
+        for (int type = 0; type < store.getMaxTypes(); type++) {
+            int newStock = s.getStock().get(type) + a.getChange().get(type);
+            int change = newStock - s1.getStock().get(type);
+            if (change < 0) {
+                return 0;
+            }
+            List<Double> row = probabilities.get(type).getRow(newStock);
+            prob *= row.get(change);
+            // new state has 0 stock. there is more than one way to get there 
+            if (s1.getStock().get(type) == 0) {
+                for (int want = change + 1; want <= store.getCapacity(); want++) {
+                    prob *= row.get(want);
+                }
+            }
+        }
+        return prob;
+    }
+
+    private double getReward(final State s) {
+        double r = 0;
+        for (int type = 0; type < store.getMaxTypes(); type++) {
+            r += s.getStock().get(type) * spec.getPrices().get(type);
+        }
+        return r;
+    }
 }

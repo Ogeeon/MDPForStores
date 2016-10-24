@@ -56,7 +56,12 @@ public class MDP {
         probabilities = transProbs;
         
         states = initStates();
-        System.out.println(states);
+        for (State s: states) {
+            System.out.println(s);
+            Set<Action> actions = getActions(s);
+            System.out.println(actions);
+        }
+        
     }
     
     /**
@@ -64,10 +69,8 @@ public class MDP {
      */
     private Set<State> initStates() {
         final Set<State> sts = new HashSet<State>();
-        
-        for (int s = -capacity; s <= capacity; s++) {
-            int upperLim = s <= 0 ? capacity : capacity - s;
-            for (int r = -capacity; r <= upperLim; r++) {
+        for (int s = 0; s <= capacity; s++) {
+            for (int r = 0; r <= capacity - s; r++) {
                 List<Integer> state = new ArrayList<Integer>();
                 state.add(s);
                 state.add(r);
@@ -83,19 +86,29 @@ public class MDP {
      * @return Set of actions available from a given state.
      */
     private Set<Action> getActions(final State state) {
+        // Actions that can be done are just returning or ordering items.
         Set<Action> acts = new HashSet<Action>();
-        // Actions that can be done are just returning or ordering items. 
-        // A store cannot return more items that it has, and cannot exceed its capacity.
-        /*
-        int remainder = state.getInitialStock() - state.getCustomerWants();
-        remainder = remainder < 0 ? 0 : remainder;
-        int minChng = -Math.min(remainder, maxReturns);
-        int maxChng = Math.min(maxOrder, capacity - remainder);
-        for (int chng = minChng; chng <= maxChng; chng++) {
-            Action a = new Action(chng);
-            acts.add(a);
+        for (int a1 = -maxReturns; a1 <= maxOrder; a1++) {
+            int min = 0;
+            if (a1 < 0) {
+                if (state.getStock().get(0) + a1 < 0) {
+                    continue;
+                }
+                if (-a1 < maxReturns) {
+                    min = -(maxReturns + a1);
+                }
+            }
+            int max = a1 < 0 ? maxOrder : maxOrder - a1;
+            for (int a2 = min; a2 <= max; a2++) {
+                if (a2 < 0 && state.getStock().get(1) + a2 < 0) {
+                    continue;
+                }
+                List<Integer> act = new ArrayList<Integer>();
+                act.add(a1);
+                act.add(a2);
+                acts.add(new Action(act));
+            }
         }
-        */
         return acts;
     }
     
@@ -148,6 +161,7 @@ public class MDP {
      * @return Mapping of stock amounts to recommended actions
      */
     public final Map<Integer, Integer> valueIteration(final double epsilon) {
+        /*
         Map<State, Action> optimalActions = new LinkedHashMap<State, Action>();
         // Local variables: U, U', vectors of utilities for states in S, initially zero
         Map<State, Double> u = initMap(states, new Double(0));
@@ -194,8 +208,10 @@ public class MDP {
                 policy.put(s.getInitialStock(), ((Action) entry.getValue()).getChange());
             }
         }
-        */
+        
         return policy;
+        */
+        return new LinkedHashMap<Integer, Integer>(); 
     }
 
     /**

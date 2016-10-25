@@ -23,7 +23,7 @@ public class Runner {
 	private static String solverName = null;
 	
 	/** Whether to re-create the solver for every simulation. */
-	public static boolean RECREATE_SOLVER = true;
+	public static boolean RECREATE_SOLVER = false;
 
 	public static void main(String[] args) throws Exception {
 		parseCommandLine(args);
@@ -34,10 +34,9 @@ public class Runner {
 		ProblemSpec spec = new ProblemSpec(inputPath);
 		double totalProfit = 0;
 		
-		OrderingAgent solver = (OrderingAgent)ctor.newInstance(spec);
-        solver.doOfflineComputation();
+//		OrderingAgent solver = (OrderingAgent)ctor.newInstance(spec);
+//        solver.doOfflineComputation();
         
-		/*
 		Simulator simulator = new Simulator(spec);
 		OrderingAgent solver = null;
 		if (!RECREATE_SOLVER) {
@@ -69,7 +68,6 @@ public class Runner {
 		System.out.printf("Summary statistics from %d runs:\n", numSimulations);
 		System.out.println();
 		System.out.printf("Overall profit: %f\n", totalProfit);
-		*/
 	}
 	
 	/**

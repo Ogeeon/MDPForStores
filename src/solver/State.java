@@ -36,21 +36,47 @@ public class State implements Comparable<State> {
     
     public String toString() {
         return stock.toString() + actions.toString();
+//        return stock.toString();
     }
 
     @Override
-    public int compareTo(State o) {
+    public final int compareTo(final State o) {
         if (stock.size() != o.getStock().size()) {
             throw new IllegalArgumentException("Number of item types don't match");
         }
         for (int idx = 0; idx < stock.size(); idx++) {
             if (stock.get(idx) < o.getStock().get(idx)) {
-                return 1;
+                return -1;
             }
             if (stock.get(idx) > o.getStock().get(idx)) {
-                return -1;
+                return 1;
             }
         }
         return 0;
+    }
+    
+    @Override
+    public final boolean equals(final Object o) {
+        if (o == null) {
+            return false;
+        }
+        State s1 = (State) o;
+        if (stock.size() != s1.getStock().size()) {
+            throw new IllegalArgumentException("Number of item types don't match");
+        }
+        for (int i = 0; i < stock.size(); i++) {
+            if (stock.get(i) != s1.getStock().get(i)) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    public final int hashCode() {
+        int code = 0;
+        for (int i = 0; i < stock.size(); i++) {
+            code += stock.get(i) * Math.pow(10, i);
+        }
+        return code;
     }
 }

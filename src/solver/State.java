@@ -35,8 +35,8 @@ public class State implements Comparable<State> {
     
     
     public String toString() {
-        return stock.toString() + actions.toString();
-//        return stock.toString();
+//        return stock.toString() + (actions == null ? "" : actions.toString());
+        return stock.toString();
     }
 
     @Override
@@ -73,10 +73,6 @@ public class State implements Comparable<State> {
     }
     
     public final int hashCode() {
-        int code = 0;
-        for (int i = 0; i < stock.size(); i++) {
-            code += stock.get(i) * Math.pow(10, i);
-        }
-        return code;
+        return stock.hashCode();
     }
 }

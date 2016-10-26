@@ -23,6 +23,13 @@ public class Action {
         return change;
     }
     
+    /**
+     * @param newChange new list of values for order
+     */
+    public void setChange(List<Integer> newChange) {
+        change = newChange;
+    }
+    
     public final String toString() {
         return String.valueOf(change);
     }

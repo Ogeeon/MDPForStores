@@ -36,15 +36,16 @@ public class MySolver implements OrderingAgent {
 	
 	public void doOfflineComputation() {
 	    states = addStates(new ArrayList<Integer>(), 0);
-	    if (store.getMaxTypes() < 5) {
+//	    System.out.println(new Date());
+//	    if (store.getMaxTypes() < 5) {
 	        policy = valueIteration(1);
-	    } else {
+//	    } else {
 	    
-    	    policy = initPolicy();
+//    	    policy = initPolicy();
+//    	    policyIteration(policy);
 //    	    System.out.println(new Date());
-    	    policyIteration(policy);
-//    	    System.out.println(new Date());
-	    }
+//	    }
+//	    System.out.println(new Date());
 	}
 
     public final Map<State, Action> valueIteration(final double epsilon) {
@@ -80,16 +81,23 @@ public class MySolver implements OrderingAgent {
 	public List<Integer> generateStockOrder(List<Integer> stockInventory,
 											int numWeeksLeft) {
 	    State tmp = new State(stockInventory);
-	    Action act = policy.get(tmp); 
+	    Action act = policy.get(tmp);
+	    List<Integer> order;
 	    if (act == null) {
-	        List<Integer> order = new ArrayList<Integer>();
+	        order = new ArrayList<Integer>();
 	        for (int i = 0; i < store.getMaxTypes(); i++) {
 	            order.add(0);
 	        }
-	        act = new Action(order);
+	    } else {
+	        order = new ArrayList<Integer>();
+            for (int i = 0; i < store.getMaxTypes(); i++) {
+                order.add(stockInventory.get(i) + act.getChange().get(i) > store.getCapacity() 
+                        ? store.getCapacity() - stockInventory.get(i) 
+                        : act.getChange().get(i));
+            }
 	    }
 	    
-	    return act.getChange();
+	    return order;
 	}
 
     

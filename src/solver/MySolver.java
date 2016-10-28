@@ -36,15 +36,14 @@ public class MySolver implements OrderingAgent {
 	
 	public void doOfflineComputation() {
 	    states = addStates(new ArrayList<Integer>(), 0);
-//	    System.out.println(new Date());
-//	    if (store.getMaxTypes() < 5) {
+//	    System.out.println(states);
+	    if (store.getMaxTypes() < 5) {
 	        policy = valueIteration(1);
-//	    } else {
-	    
-//    	    policy = initPolicy();
-//    	    policyIteration(policy);
+	    } else {
+    	    policy = initPolicy();
+    	    policyIteration(policy);
 //    	    System.out.println(new Date());
-//	    }
+	    }
 //	    System.out.println(new Date());
 	}
 
@@ -113,7 +112,11 @@ public class MySolver implements OrderingAgent {
                 tmpStates.addAll(addStates(tmpStock, tmpCurrStock));
             } else {
                 State s = new State(tmpStock);
-                s.setActions(addActions(s, new ArrayList<Integer>(), 0, 0));
+                if (store.getMaxTypes() < 5) {
+                    s.setActions(addActions(s, new ArrayList<Integer>(), 0, 0));
+                } else {
+                    s.setActions(addGreedyActions(s, new ArrayList<Integer>(), 0));
+                }
                 tmpStates.add(s);
             }
         }
@@ -173,6 +176,34 @@ public class MySolver implements OrderingAgent {
             } else {
                 Action a = new Action(tmpChange);
                 tmpActions.add(a);
+            }
+        }
+        return tmpActions;
+    }
+    
+    private Set<Action> addGreedyActions(State s, List<Integer> change, int currOrder) {
+        Set<Action> tmpActions = new HashSet<Action>();
+        change.add(0);
+        int tmpCurrOrder = currOrder;
+        int max = store.getMaxPurchase();
+        if (currOrder > 0) {
+            max -= currOrder;
+        }
+        for (int order = 0; order <= max; order++) {
+            tmpCurrOrder = currOrder + order;
+            List<Integer> tmpChange = new ArrayList<Integer>(change);
+            tmpChange.set(tmpChange.size() - 1, order);
+            if (tmpChange.size() < store.getMaxTypes()) {
+                tmpActions.addAll(addGreedyActions(s, tmpChange, tmpCurrOrder));
+            } else {
+                int totalStock = 0;
+                for (int i = 0; i < store.getMaxTypes(); i++) {
+                    totalStock += s.getStock().get(i) + tmpChange.get(i);
+                }
+                if (totalStock == store.getCapacity() || tmpCurrOrder == store.getMaxPurchase()) {
+                    Action a = new Action(tmpChange);
+                    tmpActions.add(a);
+                }
             }
         }
         return tmpActions;
@@ -256,14 +287,11 @@ public class MySolver implements OrderingAgent {
     private void policyIteration(Map<State, Action> p) {
         Map<State, Double> u = initMap(states, new Double(0));
         boolean noChange = false;
-//        System.out.println("before eval");
         policyEvaluation(policy, u);
-//        System.out.println("eval done. total states=" + states.size());
         do {
             noChange = true;
-            int i = 0;
+//            int i = 0;
             for (State s : states) {
-//                System.out.println("state " + i++);
                 Action bestAction = new Action(new ArrayList<Integer>());
                 double meu = calcMEU(s, u, bestAction);
                 double eu = calcEU(s, p.get(s), u);
@@ -274,5 +302,6 @@ public class MySolver implements OrderingAgent {
                 }
             }
         } while (!noChange);
+        System.out.println("pi done");
     }
 }
